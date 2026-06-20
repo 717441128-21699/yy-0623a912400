@@ -1,0 +1,94 @@
+@use '@/styles/variables.scss' as *;
+
+.container {
+  padding: $spacing-md;
+}
+
+.gaugeWrapper {
+  margin-bottom: $spacing-lg;
+}
+
+.gaugeTrack {
+  height: 16rpx;
+  background: linear-gradient(90deg, $color-frozen, $color-chilled, $color-warning, $color-error);
+  border-radius: $radius-round;
+  position: relative;
+  overflow: visible;
+}
+
+.gaugeFill {
+  height: 100%;
+  border-radius: $radius-round;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: -12rpx;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28rpx;
+    height: 28rpx;
+    background: #fff;
+    border: 6rpx solid inherit;
+    border-radius: $radius-round;
+    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
+  }
+}
+
+.scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: $spacing-sm;
+}
+
+.scaleText {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.tempInfo {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: $spacing-md 0;
+}
+
+.currentTemp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tempValue {
+  font-size: 56rpx;
+  font-weight: $font-weight-bold;
+  line-height: 1.1;
+}
+
+.tempLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  margin-top: $spacing-xs;
+}
+
+.avgTemp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-md $spacing-xl;
+  background: $color-bg-page;
+  border-radius: $radius-lg;
+}
+
+.avgValue {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.avgLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-top: $spacing-xs;
+}

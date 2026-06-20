@@ -1,0 +1,171 @@
+@use '@/styles/variables.scss' as *;
+
+.container {
+  display: flex;
+  min-height: 160rpx;
+}
+
+.connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 64rpx;
+  flex-shrink: 0;
+}
+
+.dot {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: $radius-round;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dotText {
+  color: #fff;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+}
+
+.line {
+  width: 4rpx;
+  flex: 1;
+  margin-top: $spacing-xs;
+  min-height: 40rpx;
+}
+
+.content {
+  flex: 1;
+  padding-bottom: $spacing-lg;
+  padding-left: $spacing-sm;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-sm;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.stageName {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.expandIcon {
+  font-size: $font-size-sm;
+  color: $color-primary;
+}
+
+.timeRange {
+  margin-bottom: $spacing-sm;
+}
+
+.timeText {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.tempRow {
+  display: flex;
+  gap: $spacing-xl;
+  margin-bottom: $spacing-sm;
+}
+
+.tempItem {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.tempLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.tempValue {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.description {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  line-height: $line-height-normal;
+}
+
+.details {
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 2rpx solid $color-divider;
+}
+
+.anomalyBox {
+  padding: $spacing-md;
+  background: rgba(245, 158, 11, 0.08);
+  border-radius: $radius-md;
+  margin-bottom: $spacing-md;
+}
+
+.anomalyLabel {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $color-warning;
+  display: block;
+  margin-bottom: $spacing-xs;
+}
+
+.anomalyText {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  line-height: $line-height-normal;
+}
+
+.detailLabel {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-sm;
+  display: block;
+}
+
+.tempList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.tempPoint {
+  width: calc(33.33% - 16rpx);
+  padding: $spacing-sm;
+  background: $color-bg-page;
+  border-radius: $radius-sm;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pointTime {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.pointTemp {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $color-success;
+}
+
+.abnormal {
+  font-weight: $font-weight-bold;
+}
