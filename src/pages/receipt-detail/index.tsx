@@ -28,6 +28,7 @@ const ReceiptDetailPage: React.FC = () => {
   const [photos, setPhotos] = useState<string[]>([])
   const [showResult, setShowResult] = useState(false)
   const [resultType, setResultType] = useState<'success' | 'warn'>('success')
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const id = router.params.id
@@ -55,17 +56,26 @@ const ReceiptDetailPage: React.FC = () => {
       }
       console.log('[ReceiptDetail] load:', id, r?.id, 'status:', r?.status)
     }
+    setIsLoading(false)
   }, [router.params.id])
 
-  if (!receipt) {
-    return (
-      <View className={styles.page} style={{ padding: 100, textAlign: 'center' }}>
-        <Text>验收单不存在</Text>
-      </View>
-    )
-  }
+  const platformTemp = useMemo(() => {
+    if (receipt && receipt.platformTemp !== undefined) {
+      return receipt.platformTemp
+    }
+    return batch?.stages[batch.stages.length - 1]?.avgTemp ?? 0
+  }, [batch, receipt])
 
-  const platformTemp = batch?.stages[batch.stages.length - 1]?.avgTemp ?? 0
+  const savedTempGap = useMemo(() => {
+    if (receipt && receipt.tempGap !== undefined) {
+      return receipt.tempGap
+    }
+    if (receipt && receipt.arrivalTemp !== undefined) {
+      return Math.abs(receipt.arrivalTemp - platformTemp)
+    }
+    return undefined
+  }, [receipt, platformTemp])
+
   const hasTempGap = useMemo(() => {
     if (!isValidTemperature(arrivalTemp)) return false
     return tempGapWarning(parseFloat(arrivalTemp), platformTemp)
@@ -83,6 +93,22 @@ const ReceiptDetailPage: React.FC = () => {
   const canGoToTemp = useMemo(() => {
     return currentStep === 'temp' && isValidTemperature(arrivalTemp)
   }, [currentStep, arrivalTemp])
+
+  if (isLoading) {
+    return (
+      <View className={styles.page} style={{ padding: 100, textAlign: 'center' }}>
+        <Text>加载中...</Text>
+      </View>
+    )
+  }
+
+  if (!receipt) {
+    return (
+      <View className={styles.page} style={{ padding: 100, textAlign: 'center' }}>
+        <Text>验收单不存在</Text>
+      </View>
+    )
+  }
 
   const addPhoto = () => {
     const newPhoto = `https://picsum.photos/id/${200 + photos.length}/300/300`
@@ -159,10 +185,10 @@ const ReceiptDetailPage: React.FC = () => {
   }
 
   const renderCompletedView = () => {
-    const hasGap = receipt.tempGap !== undefined && receipt.tempGap > 3
+    const hasGap = savedTempGap !== undefined && savedTempGap > 3
     const displayArrivalTemp = receipt.arrivalTemp !== undefined ? formatTemp(receipt.arrivalTemp) : '-'
     const displayPlatformTemp = formatTemp(platformTemp)
-    const displayTempGap = receipt.tempGap !== undefined ? `${receipt.tempGap.toFixed(1)}°C` : '-'
+    const displayTempGap = savedTempGap !== undefined ? `${savedTempGap.toFixed(1)}°C` : '-'
 
     return (
       <View className={styles.page}>

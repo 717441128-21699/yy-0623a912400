@@ -132,13 +132,27 @@ const ReceiptPage: React.FC = () => {
             )}
 
             <View className={styles.cardFooter}>
-              {r.status === 'processing' && r.arrivalTemp !== undefined && r.platformTemp !== undefined && (
+              {r.arrivalTemp !== undefined && r.platformTemp !== undefined ? (
+                <View className={styles.tempInfo}>
+                  <View className={styles.tempRow}>
+                    <Text>到货温度：</Text>
+                    <Text className={styles.tempValue}>{formatTemp(r.arrivalTemp)}</Text>
+                    <Text style={{ color: '#999' }}>|</Text>
+                    <Text>平台温度：</Text>
+                    <Text className={styles.tempValue}>{formatTemp(r.platformTemp)}</Text>
+                  </View>
+                  <View className={styles.tempRow}>
+                    <Text>温差：</Text>
+                    <Text className={tempGapWarning(r.arrivalTemp, r.platformTemp) ? styles.tempGapWarning : styles.tempGapNormal}>
+                      {(r.tempGap !== undefined ? r.tempGap : Math.abs(r.arrivalTemp - r.platformTemp)).toFixed(1)}°C
+                      {tempGapWarning(r.arrivalTemp, r.platformTemp) ? '（超出阈值）' : '（正常）'}
+                    </Text>
+                  </View>
+                </View>
+              ) : (
                 <Text className={styles.cardMeta}>
-                  到货 {formatTemp(r.arrivalTemp)} / 平台 {formatTemp(r.platformTemp)}
+                  {r.status === 'pending' ? '尚未录入温度' : '温度信息不完整'}
                 </Text>
-              )}
-              {r.status === 'completed' && r.arrivalTemp !== undefined && (
-                <Text className={styles.cardMeta}>验收温度：{formatTemp(r.arrivalTemp)}</Text>
               )}
               {r.status !== 'completed' ? (
                 <Button

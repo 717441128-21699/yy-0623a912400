@@ -198,3 +198,31 @@
   font-size: $font-size-sm;
   font-weight: $font-weight-medium;
 }
+
+.tempInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.tempRow {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.tempValue {
+  font-weight: $font-weight-medium;
+}
+
+.tempGapNormal {
+  color: $color-success;
+  font-weight: $font-weight-semibold;
+}
+
+.tempGapWarning {
+  color: $color-error;
+  font-weight: $font-weight-semibold;
+}
