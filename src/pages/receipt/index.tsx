@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { View, Text, Button } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useDidShow } from '@tarojs/taro'
 import classnames from 'classnames'
 import { mockReceipts, getReceiptsByStatus } from '@/data/receipts'
 import type { ReceiptRecord } from '@/types/coldchain'
@@ -11,8 +11,21 @@ type FilterType = 'all' | 'pending' | 'processing' | 'completed'
 
 const ReceiptPage: React.FC = () => {
   const [filter, setFilter] = useState<FilterType>('all')
+  const [receipts, setReceipts] = useState<ReceiptRecord[]>([])
 
-  const receipts = getReceiptsByStatus(filter)
+  const refreshData = useCallback(() => {
+    const data = getReceiptsByStatus(filter)
+    setReceipts(data)
+    console.log('[ReceiptPage] refresh data, count:', data.length)
+  }, [filter])
+
+  useDidShow(() => {
+    refreshData()
+  })
+
+  React.useEffect(() => {
+    refreshData()
+  }, [refreshData])
 
   const handleScan = () => {
     Taro.showToast({ title: '扫码功能模拟', icon: 'none' })

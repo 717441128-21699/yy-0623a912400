@@ -6,6 +6,7 @@ import { getReceiptById } from '@/data/receipts'
 import { getBatchById } from '@/data/batches'
 import type { ReceiptRecord, BatchInfo } from '@/types/coldchain'
 import { tempGapWarning, formatTemp } from '@/utils/temp'
+import { updateReceipt } from '@/utils/storage'
 import styles from './index.module.scss'
 
 type StepType = 'package' | 'seal' | 'temp' | 'photo' | 'submit'
@@ -67,18 +68,40 @@ const ReceiptDetailPage: React.FC = () => {
     setPhotos(photos.filter((_, i) => i !== idx))
   }
 
+  const saveProgress = (status: 'processing' | 'completed') => {
+    if (!receipt) return
+    const arrivalTempNum = arrivalTemp !== '' ? parseFloat(arrivalTemp) : undefined
+    const updatedReceipt: ReceiptRecord = {
+      ...receipt,
+      status,
+      outerPackageOk,
+      sealOk,
+      arrivalTemp: arrivalTempNum,
+      platformTemp,
+      tempGap: arrivalTempNum !== undefined ? Math.abs(arrivalTempNum - platformTemp) : undefined,
+      photos,
+      receiver: '当前用户'
+    }
+    updateReceipt(updatedReceipt)
+    console.log('[ReceiptDetail] save progress:', receipt.id, status, updatedReceipt)
+  }
+
   const nextStep = () => {
     if (currentStep === 'package' && outerPackageOk !== null) {
+      saveProgress('processing')
       setCurrentStep('seal')
     } else if (currentStep === 'seal' && sealOk !== null) {
+      saveProgress('processing')
       setCurrentStep('temp')
     } else if (currentStep === 'temp' && arrivalTemp !== '') {
+      saveProgress('processing')
       setCurrentStep('photo')
     }
   }
 
   const handleSubmit = () => {
     console.log('[ReceiptDetail] submit receipt')
+    saveProgress('completed')
     if (hasTempGap) {
       setResultType('warn')
     } else {
@@ -232,10 +255,15 @@ const ReceiptDetailPage: React.FC = () => {
                 <View className={styles.tempInputWrap}>
                   <Input
                     className={styles.tempInput}
-                    type='digit'
-                    placeholder='0.0'
+                    type='text'
+                    placeholder={batch && batch.tempMin < 0 ? '-18.0' : '0.0'}
                     value={arrivalTemp}
-                    onInput={(e) => setArrivalTemp(e.detail.value)}
+                    onInput={(e) => {
+                      const val = e.detail.value
+                      if (/^-?\d*\.?\d{0,2}$/.test(val) || val === '' || val === '-') {
+                        setArrivalTemp(val)
+                      }
+                    }}
                   />
                   <Text className={styles.tempUnit}>°C</Text>
                 </View>

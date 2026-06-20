@@ -1,4 +1,5 @@
 import type { ReceiptRecord } from '@/types/coldchain'
+import { loadReceipts } from '@/utils/storage'
 
 export const mockReceipts: ReceiptRecord[] = [
   {
@@ -66,11 +67,29 @@ export const mockReceipts: ReceiptRecord[] = [
   }
 ]
 
+const getMergedReceipts = (): ReceiptRecord[] => {
+  const saved = loadReceipts()
+  if (!saved) return mockReceipts
+
+  const merged = [...mockReceipts]
+  saved.forEach(savedR => {
+    const idx = merged.findIndex(r => r.id === savedR.id)
+    if (idx >= 0) {
+      merged[idx] = savedR
+    } else {
+      merged.push(savedR)
+    }
+  })
+  return merged.sort((a, b) => new Date(b.createTime).getTime() - new Date(a.createTime).getTime())
+}
+
 export const getReceiptById = (id: string): ReceiptRecord | undefined => {
-  return mockReceipts.find(r => r.id === id)
+  const merged = getMergedReceipts()
+  return merged.find(r => r.id === id)
 }
 
 export const getReceiptsByStatus = (status?: string): ReceiptRecord[] => {
-  if (!status || status === 'all') return mockReceipts
-  return mockReceipts.filter(r => r.status === status)
+  const merged = getMergedReceipts()
+  if (!status || status === 'all') return merged
+  return merged.filter(r => r.status === status)
 }
