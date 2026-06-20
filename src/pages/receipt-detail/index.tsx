@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { View, Text, Input, Button, Image } from '@tarojs/components'
 import Taro, { useRouter } from '@tarojs/taro'
 import classnames from 'classnames'
@@ -10,6 +10,12 @@ import { updateReceipt } from '@/utils/storage'
 import styles from './index.module.scss'
 
 type StepType = 'package' | 'seal' | 'temp' | 'photo' | 'submit'
+
+const isValidTemperature = (val: string): boolean => {
+  if (!val || val === '-' || val === '.' || val === '-.' || val === '.-') return false
+  const num = parseFloat(val)
+  return !isNaN(num) && isFinite(num)
+}
 
 const ReceiptDetailPage: React.FC = () => {
   const router = useRouter()
@@ -31,7 +37,12 @@ const ReceiptDetailPage: React.FC = () => {
       if (r) {
         const b = getBatchById(r.batchId)
         setBatch(b || null)
-        if (r.status === 'processing') {
+        if (r.status === 'completed') {
+          setOuterPackageOk(r.outerPackageOk ?? null)
+          setSealOk(r.sealOk ?? null)
+          setArrivalTemp(r.arrivalTemp?.toString() || '')
+          setPhotos(r.photos || [])
+        } else if (r.status === 'processing') {
           setOuterPackageOk(r.outerPackageOk ?? null)
           setSealOk(r.sealOk ?? null)
           setArrivalTemp(r.arrivalTemp?.toString() || '')
@@ -42,7 +53,7 @@ const ReceiptDetailPage: React.FC = () => {
           else setCurrentStep('photo')
         }
       }
-      console.log('[ReceiptDetail] load:', id, r?.id)
+      console.log('[ReceiptDetail] load:', id, r?.id, 'status:', r?.status)
     }
   }, [router.params.id])
 
@@ -55,8 +66,23 @@ const ReceiptDetailPage: React.FC = () => {
   }
 
   const platformTemp = batch?.stages[batch.stages.length - 1]?.avgTemp ?? 0
-  const hasTempGap = arrivalTemp && tempGapWarning(parseFloat(arrivalTemp), platformTemp)
-  const canSubmit = outerPackageOk !== null && sealOk !== null && arrivalTemp !== '' && photos.length > 0
+  const hasTempGap = useMemo(() => {
+    if (!isValidTemperature(arrivalTemp)) return false
+    return tempGapWarning(parseFloat(arrivalTemp), platformTemp)
+  }, [arrivalTemp, platformTemp])
+
+  const canSubmit = useMemo(() => {
+    return (
+      outerPackageOk !== null &&
+      sealOk !== null &&
+      isValidTemperature(arrivalTemp) &&
+      photos.length > 0
+    )
+  }, [outerPackageOk, sealOk, arrivalTemp, photos])
+
+  const canGoToTemp = useMemo(() => {
+    return currentStep === 'temp' && isValidTemperature(arrivalTemp)
+  }, [currentStep, arrivalTemp])
 
   const addPhoto = () => {
     const newPhoto = `https://picsum.photos/id/${200 + photos.length}/300/300`
@@ -70,7 +96,7 @@ const ReceiptDetailPage: React.FC = () => {
 
   const saveProgress = (status: 'processing' | 'completed') => {
     if (!receipt) return
-    const arrivalTempNum = arrivalTemp !== '' ? parseFloat(arrivalTemp) : undefined
+    const arrivalTempNum = isValidTemperature(arrivalTemp) ? parseFloat(arrivalTemp) : undefined
     const updatedReceipt: ReceiptRecord = {
       ...receipt,
       status,
@@ -93,7 +119,7 @@ const ReceiptDetailPage: React.FC = () => {
     } else if (currentStep === 'seal' && sealOk !== null) {
       saveProgress('processing')
       setCurrentStep('temp')
-    } else if (currentStep === 'temp' && arrivalTemp !== '') {
+    } else if (currentStep === 'temp' && canGoToTemp) {
       saveProgress('processing')
       setCurrentStep('photo')
     }
@@ -101,6 +127,10 @@ const ReceiptDetailPage: React.FC = () => {
 
   const handleSubmit = () => {
     console.log('[ReceiptDetail] submit receipt')
+    if (!isValidTemperature(arrivalTemp)) {
+      Taro.showToast({ title: '请输入有效的温度值', icon: 'none' })
+      return
+    }
     saveProgress('completed')
     if (hasTempGap) {
       setResultType('warn')
@@ -126,6 +156,104 @@ const ReceiptDetailPage: React.FC = () => {
 
   const goBack = () => {
     Taro.navigateBack()
+  }
+
+  const renderCompletedView = () => {
+    const hasGap = receipt.tempGap !== undefined && receipt.tempGap > 3
+    const displayArrivalTemp = receipt.arrivalTemp !== undefined ? formatTemp(receipt.arrivalTemp) : '-'
+    const displayPlatformTemp = formatTemp(platformTemp)
+    const displayTempGap = receipt.tempGap !== undefined ? `${receipt.tempGap.toFixed(1)}°C` : '-'
+
+    return (
+      <View className={styles.page}>
+        <View className={styles.infoCard}>
+          <View style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+            <Text className={styles.productName}>{receipt.productName}</Text>
+            <View className={[styles.statusBadge, styles.statusCompleted].join(' ')}>
+              <Text>已完成</Text>
+            </View>
+          </View>
+          <Text className={styles.containerNo}>柜号：{receipt.containerNo}</Text>
+          <Text className={styles.arrivalTime}>到货时间：{receipt.createTime}</Text>
+          {receipt.receiver && <Text className={styles.arrivalTime}>验收人：{receipt.receiver}</Text>}
+        </View>
+
+        <View className={styles.completedSection}>
+          <View className={styles.completedCard}>
+            <View className={styles.resultRow}>
+              <View className={styles.resultItem}>
+                <Text className={styles.resultLabel}>外包装检查</Text>
+                <Text className={styles.resultValue} style={{ color: receipt.outerPackageOk ? '#10B981' : '#EF4444' }}>
+                  {receipt.outerPackageOk ? '✓ 完好正常' : '✗ 有破损'}
+                </Text>
+              </View>
+            </View>
+            <View className={styles.resultRow}>
+              <View className={styles.resultItem}>
+                <Text className={styles.resultLabel}>封签检查</Text>
+                <Text className={styles.resultValue} style={{ color: receipt.sealOk ? '#10B981' : '#EF4444' }}>
+                  {receipt.sealOk ? '✓ 封签完好' : '✗ 异常'}
+                </Text>
+              </View>
+            </View>
+            <View className={styles.resultRow}>
+              <View className={styles.resultItem}>
+                <Text className={styles.resultLabel}>到货温度</Text>
+                <Text className={styles.resultValue}>{displayArrivalTemp}</Text>
+              </View>
+            </View>
+            <View className={styles.resultRow}>
+              <View className={styles.resultItem}>
+                <Text className={styles.resultLabel}>平台记录温度</Text>
+                <Text className={styles.resultValue}>{displayPlatformTemp}</Text>
+              </View>
+            </View>
+            <View className={styles.resultRow}>
+              <View className={styles.resultItem}>
+                <Text className={styles.resultLabel}>温差结果</Text>
+                <Text
+                  className={styles.resultValue}
+                  style={{ color: hasGap ? '#EF4444' : '#10B981' }}
+                >
+                  {displayTempGap} {hasGap ? '（超出阈值）' : '（正常范围）'}
+                </Text>
+              </View>
+            </View>
+            {hasGap && (
+              <View className={styles.tempAlert}>
+                <Text className={styles.tempAlertTitle}>⚠️ 温差过大</Text>
+                <Text className={styles.tempAlertText}>
+                  到货温度与平台记录温差超过 3°C 阈值，已联系采购经理确认后入库。
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {receipt.photos && receipt.photos.length > 0 && (
+            <View className={styles.photosSection}>
+              <Text className={styles.sectionTitle}>验收照片（{receipt.photos.length}张）</Text>
+              <View className={styles.photoGrid}>
+                {receipt.photos.map((p, idx) => (
+                  <View className={styles.photoItem} key={idx}>
+                    <Image className={styles.photoImg} src={p} mode='aspectFill' />
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
+
+        <View className={styles.bottomBar}>
+          <Button className={[styles.btn, styles.btnPrimary].join(' ')} onClick={goBack}>
+            返回验收列表
+          </Button>
+        </View>
+      </View>
+    )
+  }
+
+  if (receipt.status === 'completed') {
+    return renderCompletedView()
   }
 
   if (showResult) {
@@ -244,8 +372,8 @@ const ReceiptDetailPage: React.FC = () => {
         {(currentStep === 'temp' || currentStep === 'photo' || currentStep === 'submit') && (
           <View className={styles.stepItem}>
             <View className={styles.stepHeader}>
-              <View className={[styles.stepNum, arrivalTemp !== '' && styles.stepCompleted].join(' ')}>
-                <Text>{arrivalTemp !== '' ? '✓' : '3'}</Text>
+              <View className={[styles.stepNum, isValidTemperature(arrivalTemp) && styles.stepCompleted].join(' ')}>
+                <Text>{isValidTemperature(arrivalTemp) ? '✓' : '3'}</Text>
               </View>
               <Text className={styles.stepTitle}>录入到货温度</Text>
             </View>
@@ -277,7 +405,7 @@ const ReceiptDetailPage: React.FC = () => {
                     <Text className={styles.tempCompareValue}>{batch?.tempRequired || '-'}</Text>
                   </View>
                 </View>
-                {hasTempGap && (
+                {isValidTemperature(arrivalTemp) && hasTempGap && (
                   <View className={styles.tempAlert}>
                     <Text className={styles.tempAlertTitle}>⚠️ 温差过大预警</Text>
                     <Text className={styles.tempAlertText}>
@@ -286,7 +414,7 @@ const ReceiptDetailPage: React.FC = () => {
                     </Text>
                   </View>
                 )}
-                {arrivalTemp !== '' && (
+                {canGoToTemp && (
                   <View style={{ marginTop: 24 }}>
                     <Button className={[styles.btn, styles.btnPrimary].join(' ')} onClick={nextStep}>
                       下一步：拍照上传

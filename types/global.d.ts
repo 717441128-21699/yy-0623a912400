@@ -7,9 +7,15 @@ declare module '*.jpeg';
 declare module '*.svg';
 declare module '*.css';
 declare module '*.less';
-declare module '*.scss';
+declare module '*.scss' {
+  const classes: Record<string, string>;
+  export default classes;
+}
 declare module '*.sass';
 declare module '*.styl';
+
+declare function definePageConfig(config: any): any;
+declare function defineAppConfig(config: any): any;
 
 declare namespace NodeJS {
   interface ProcessEnv {
